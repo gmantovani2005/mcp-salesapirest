@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-salesapirest
+  labels:
+    app: mcp-salesapirest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-salesapirest
+  template:
+    metadata:
+      labels:
+        app: mcp-salesapirest
+    spec:
+      containers:
+        - name: mcp-salesapirest
+          image: mcp-salesapirest:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: sse
+              containerPort: 8080
+          env:
+            - name: MCP_TRANSPORT
+              value: "sse"
+            - name: MCP_HOST
+              value: "0.0.0.0"
+            - name: MCP_PORT
+              value: "8080"
+            - name: SALES_API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mcp-salesapirest-config
+                  key: SALES_API_BASE_URL
+            - name: SALES_API_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: mcp-salesapirest-config
+                  key: SALES_API_TIMEOUT
+                  optional: true
+          readinessProbe:
+            tcpSocket:
+              port: sse
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: sse
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-salesapirest-config
+data:
+  SALES_API_BASE_URL: "http://sales-api.default.svc.cluster.local"
+  SALES_API_TIMEOUT: "30"

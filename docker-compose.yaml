@@ -1,0 +1,19 @@
+services:
+  mcp-salesapirest:
+    build:
+      context: .
+      dockerfile: .container/Dockerfile
+    image: mcp-salesapirest:local
+    container_name: mcp-salesapirest
+    restart: unless-stopped
+    environment:
+      MCP_TRANSPORT: sse
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8080
+      SALES_API_BASE_URL: ${SALES_API_BASE_URL:-http://host.docker.internal:8000}
+      SALES_API_TIMEOUT: ${SALES_API_TIMEOUT:-30}
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      # Permite alcançar a Sales API rodando no host (Linux)
+      - "host.docker.internal:host-gateway"
