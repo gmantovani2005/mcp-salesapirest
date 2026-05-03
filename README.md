@@ -1,72 +1,61 @@
 # mcp-salesapirest
 
-Servidor **MCP (Model Context Protocol)** em Python que envolve a **Sales
-Dataset API REST** e expõe ferramentas, recursos e prompts — todos em
-**Português do Brasil** — para análise dos dados de vendas a partir de um
-assistente de IA (Claude Desktop, Claude Code, MCP Inspector, etc.).
+Python **MCP (Model Context Protocol)** server that wraps the **Sales Dataset REST API** and exposes tools, resources, and prompts — all in **Brazilian Portuguese** — to analyze sales data from an AI assistant (Claude Desktop, Claude Code, MCP Inspector, etc.).
 
-A Sales API descrita em [`docs/swagger.json`](docs/swagger.json) oferece
-apenas operações CRUD sobre Categorias, Regiões, Métodos de Pagamento,
-Produtos e Pedidos de Venda. Este MCP **agrega** esses dados brutos em
-respostas analíticas (top produtos, vendas por região/categoria/período,
-ticket médio, distribuição de métodos de pagamento, etc.).
+The Sales API described in [`docs/swagger.json`](docs/swagger.json) only offers CRUD operations for Categories, Regions, Payment Methods, Products, and Sales Orders. This MCP **aggregates** this raw data into analytical responses (top products, sales by region/category/period, average ticket, payment method distribution, etc.).
 
 ---
 
-## Pré-requisitos
+## Prerequisites
 
-- [`uv`](https://docs.astral.sh/uv/) (gerenciador de pacotes Python)
-- Python 3.14 (instalado automaticamente pelo `uv` se necessário)
-- Uma instância da Sales Dataset API acessível (por padrão em
-  `http://localhost:8000`)
-- Para o modo container: Docker / Docker Compose ou um cluster Kubernetes
+- [`uv`](https://docs.astral.sh/uv/) (Python package manager)
+- Python 3.14 (automatically installed by `uv` if needed)
+- An accessible instance of the Sales Dataset API (by default at `http://localhost:8000`)
+- For container mode: Docker / Docker Compose or a Kubernetes cluster
 
 ---
 
-## Instalação
+## Installation
 
 ```bash
-git clone <este-repositorio>
+git clone <this-repository>
 cd mcp-salesapirest
-uv sync                       # cria .venv e instala dependências
-cp .env.example .env          # ajuste SALES_API_BASE_URL conforme seu ambiente
+uv sync                       # creates .venv and installs dependencies
+cp .env.example .env          # adjust SALES_API_BASE_URL according to your environment
 ```
 
 ---
 
-## Configuração (`.env`)
+## Configuration (`.env`)
 
-| Variável             | Default                  | Descrição                                                  |
-| -------------------- | ------------------------ | ---------------------------------------------------------- |
-| `SALES_API_BASE_URL` | `http://localhost:8000`  | URL base da Sales Dataset API.                             |
-| `SALES_API_TIMEOUT`  | `30`                     | Timeout HTTP em segundos.                                  |
-| `MCP_TRANSPORT`      | `stdio`                  | `stdio` em dev (Inspector) ou `sse` em container.          |
-| `MCP_HOST`           | `0.0.0.0`                | Interface para escuta SSE.                                 |
-| `MCP_PORT`           | `8080`                   | Porta SSE.                                                 |
+| Variable             | Default                  | Description                                                  |
+| -------------------- | ------------------------ | ------------------------------------------------------------ |
+| `SALES_API_BASE_URL` | `http://localhost:8000`  | Sales Dataset API base URL.                                  |
+| `SALES_API_TIMEOUT`  | `30`                     | HTTP timeout in seconds.                                     |
+| `MCP_TRANSPORT`      | `stdio`                  | `stdio` in dev (Inspector) or `sse` in container.            |
+| `MCP_HOST`           | `0.0.0.0`                | Interface to listen for SSE.                                 |
+| `MCP_PORT`           | `8080`                   | SSE port.                                                    |
 
 ---
 
-## Uso em desenvolvimento (stdio + MCP Inspector)
+## Development Use (stdio + MCP Inspector)
 
 ```bash
 uv run mcp dev main.py
 ```
 
-O comando abre o **MCP Inspector** no navegador. Lá você pode listar as
-**tools**, **resources** e **prompts** registradas, executar chamadas e
-inspecionar o JSON retornado.
+This command opens the **MCP Inspector** in your browser. There you can list the registered **tools**, **resources**, and **prompts**, execute calls, and inspect the returned JSON.
 
-### Conectar ao Claude Desktop
+### Connect to Claude Desktop
 
-Em `~/Library/Application Support/Claude/claude_desktop_config.json`
-(macOS) ou equivalente:
+In `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or equivalent:
 
 ```json
 {
   "mcpServers": {
     "sales-dataset": {
       "command": "uv",
-      "args": ["--directory", "/caminho/para/mcp-salesapirest", "run", "main.py"],
+      "args": ["--directory", "/path/to/mcp-salesapirest", "run", "main.py"],
       "env": {
         "SALES_API_BASE_URL": "http://localhost:8000",
         "MCP_TRANSPORT": "stdio"
@@ -78,18 +67,17 @@ Em `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ---
 
-## Uso em container (SSE)
+## Container Use (SSE)
 
 ### Docker Compose
 
 ```bash
 docker compose up --build
-# o servidor MCP fica disponível em http://localhost:8080/sse
+# the MCP server is available at http://localhost:8080/sse
 ```
 
-A variável `SALES_API_BASE_URL` aponta por padrão para
-`http://host.docker.internal:8000` (a Sales API rodando no host).
-Sobrescreva pela linha de comando se necessário:
+The `SALES_API_BASE_URL` variable defaults to `http://host.docker.internal:8000` (the Sales API running on the host).
+Overwrite it via command line if necessary:
 
 ```bash
 SALES_API_BASE_URL=https://api.example.com docker compose up
@@ -102,72 +90,70 @@ kubectl apply -f .container/deployment.yaml
 kubectl apply -f .container/service.yaml
 ```
 
-Edite o `ConfigMap` `mcp-salesapirest-config` (no
-`.container/deployment.yaml`) para ajustar `SALES_API_BASE_URL` ao endereço
-real da Sales API no cluster.
+Edit the `ConfigMap` `mcp-salesapirest-config` (in `.container/deployment.yaml`) to adjust `SALES_API_BASE_URL` to the real address of the Sales API in the cluster.
 
 ---
 
-## Tools disponíveis
+## Available Tools
 
-### Consulta direta
+### Direct Query
 
-| Tool                          | Descrição                                                                |
+| Tool                          | Description                                                              |
 | ----------------------------- | ------------------------------------------------------------------------ |
-| `listar_categorias`           | Lista categorias (filtro por nome, paginação).                           |
-| `obter_categoria`             | Recupera uma categoria por ID.                                           |
-| `listar_regioes`              | Lista regiões geográficas.                                               |
-| `obter_regiao`                | Recupera uma região por ID.                                              |
-| `listar_metodos_pagamento`    | Lista métodos de pagamento.                                              |
-| `obter_metodo_pagamento`      | Recupera um método de pagamento por ID.                                  |
-| `listar_produtos`             | Lista produtos (filtros: nome, categoria, faixa de preço).               |
-| `obter_produto`               | Recupera um produto por ID.                                              |
-| `listar_pedidos_venda`        | Lista pedidos com filtros (produto, região, método, datas, faixa total). |
-| `obter_pedido_venda`          | Recupera um pedido por ID.                                               |
-| `verificar_saude_api`         | Confere o `/health` da Sales API.                                        |
+| `listar_categorias`           | Lists categories (filter by name, pagination).                           |
+| `obter_categoria`             | Retrieves a category by ID.                                              |
+| `listar_regioes`              | Lists geographical regions.                                              |
+| `obter_regiao`                | Retrieves a region by ID.                                                |
+| `listar_metodos_pagamento`    | Lists payment methods.                                                   |
+| `obter_metodo_pagamento`      | Retrieves a payment method by ID.                                        |
+| `listar_produtos`             | Lists products (filters: name, category, price range).                   |
+| `obter_produto`               | Retrieves a product by ID.                                               |
+| `listar_pedidos_venda`        | Lists orders with filters (product, region, method, dates, total range). |
+| `obter_pedido_venda`          | Retrieves an order by ID.                                                |
+| `verificar_saude_api`         | Checks the Sales API `/health`.                                          |
 
-### Analíticas (agregam pedidos paginados)
+### Analytics (aggregates paginated orders)
 
-| Tool                              | Devolve                                                              |
+| Tool                              | Returns                                                              |
 | --------------------------------- | -------------------------------------------------------------------- |
-| `total_vendas_por_regiao`         | Receita, unidades e nº de pedidos por região.                        |
-| `total_vendas_por_categoria`      | Mesma agregação por categoria de produto.                            |
-| `top_produtos_por_receita`        | Top N produtos por receita (filtros opcionais de data/região).       |
-| `top_produtos_por_quantidade`     | Top N produtos por unidades vendidas.                                |
-| `vendas_por_periodo`              | Série temporal mensal/diária de receita e unidades.                  |
-| `distribuicao_metodos_pagamento`  | Pedidos e receita por método de pagamento, com percentuais.          |
-| `ticket_medio`                    | Ticket médio (com filtros de data, região e categoria).              |
+| `total_vendas_por_regiao`         | Revenue, units, and number of orders by region.                      |
+| `total_vendas_por_categoria`      | Same aggregation by product category.                                |
+| `top_produtos_por_receita`        | Top N products by revenue (optional date/region filters).            |
+| `top_produtos_por_quantidade`     | Top N products by units sold.                                        |
+| `vendas_por_periodo`              | Monthly/daily time series of revenue and units.                      |
+| `distribuicao_metodos_pagamento`  | Orders and revenue by payment method, with percentages.              |
+| `ticket_medio`                    | Average ticket (with date, region, and category filters).            |
 
 ---
 
-## Resources disponíveis
+## Available Resources
 
-| URI                          | Descrição                                                       |
+| URI                          | Description                                                     |
 | ---------------------------- | --------------------------------------------------------------- |
-| `sales://contexto`           | Contexto do dataset (markdown) — leitura recomendada inicial.   |
-| `sales://categorias`         | Lista atualizada de categorias (JSON).                          |
-| `sales://regioes`            | Lista atualizada de regiões (JSON).                             |
-| `sales://metodos-pagamento`  | Lista atualizada de métodos de pagamento (JSON).                |
-| `sales://saude`              | Status do `/health` da Sales API (JSON).                        |
+| `sales://contexto`           | Dataset context (markdown) — initial reading recommended.       |
+| `sales://categorias`         | Updated list of categories (JSON).                              |
+| `sales://regioes`            | Updated list of regions (JSON).                                 |
+| `sales://metodos-pagamento`  | Updated list of payment methods (JSON).                         |
+| `sales://saude`              | Sales API `/health` status (JSON).                              |
 
 ---
 
-## Prompts disponíveis
+## Available Prompts
 
-| Prompt                         | Argumentos                                |
+| Prompt                         | Arguments                                 |
 | ------------------------------ | ----------------------------------------- |
 | `analise_geral_de_vendas`      | `periodo?`                                |
 | `comparar_regioes`             | `regiao_a`, `regiao_b`, `periodo?`        |
-| `identificar_tendencias`       | `granularidade` (`mensal` ou `diario`)    |
+| `identificar_tendencias`       | `granularidade` (`mensal` or `diario`)    |
 | `recomendacoes_de_marketing`   | `categoria?`, `regiao?`                   |
 
 ---
 
-## Estrutura do projeto
+## Project Structure
 
 ```
 mcp-salesapirest/
-├── .container/                 # Dockerfile + manifestos Kubernetes
+├── .container/                 # Dockerfile + Kubernetes manifests
 │   ├── Dockerfile
 │   ├── deployment.yaml
 │   └── service.yaml
@@ -178,20 +164,20 @@ mcp-salesapirest/
 │   ├── 00-promptinicial.md
 │   ├── data-sales.md
 │   └── swagger.json
-├── main.py                     # entrypoint (stdio ou sse)
+├── main.py                     # entrypoint (stdio or sse)
 ├── pyproject.toml
 └── server/
-    ├── __init__.py             # instância FastMCP + registro
-    ├── client.py               # cliente HTTP (httpx) da Sales API
+    ├── __init__.py             # FastMCP instance + registration
+    ├── client.py               # Sales API HTTP client (httpx)
     ├── config.py               # Settings (pydantic-settings)
     ├── prompts.py              # prompts (PT-BR)
     ├── resources.py            # resources (PT-BR)
-    └── tools.py                # tools de consulta + analíticas (PT-BR)
+    └── tools.py                # query + analytics tools (PT-BR)
 ```
 
 ---
 
-## Licença
+## License
 
-Uso interno / educacional. Dataset original:
+Internal / educational use. Original dataset:
 [Online Sales Dataset (Kaggle)](https://www.kaggle.com/datasets/shreyanshverma27/online-sales-dataset-popular-marketplace-data).
